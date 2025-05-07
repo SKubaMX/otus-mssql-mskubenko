@@ -75,7 +75,8 @@ order by O.ExpectedDeliveryDate desc
 которые покупали товар "Chocolate frogs 250g".
 Имя товара смотреть в таблице Warehouse.StockItems.
 */
-select P.PersonID, P.FullName, P.PhoneNumber from [Application].[People] P
-inner join [Warehouse].[StockItemTransactions] SIT on sit.CustomerID = P.PersonID
-Inner join [Warehouse].[StockItems] SI on si.StockItemID = sit.StockItemID
+select C.CustomerID, C.CustomerName, C.PhoneNumber from [Sales].[Customers] C
+Inner join [Sales].[Orders] O on o.CustomerID = C.CustomerID
+inner join [Sales].[OrderLines] OL on o.OrderID = OL.OrderID
+inner join [Warehouse].[StockItems] SI on si.StockItemID = ol.StockItemID
 where si.StockItemName = 'Chocolate frogs 250g'
