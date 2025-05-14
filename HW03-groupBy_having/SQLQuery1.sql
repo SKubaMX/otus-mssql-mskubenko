@@ -11,7 +11,7 @@ USE WideWorldImporters
 ѕродажи смотреть в таблице Sales.Invoices и св€занных таблицах.
 */
 Select YEAR(I.InvoiceDate) as "Year", MONTH(I.InvoiceDate) as "Month", AVG(OL.UnitPrice*ol.Quantity) as "MeanPrice", SUM(ol.UnitPrice*ol.Quantity) as "TotalPrice" from Sales.Invoices I
-Inner join Sales.OrderLines OL ON ol.OrderID = I.OrderID
+Inner join Sales.InvoiceLines OL ON ol.InvoiceID = I.InvoiceID
 group by YEAR(I.InvoiceDate), MONTH(I.InvoiceDate)
 Order by Year, Month ASC 
 /*
@@ -24,9 +24,10 @@ Order by Year, Month ASC
 
 ѕродажи смотреть в таблице Sales.Invoices и св€занных таблицах.
 */
-Select YEAR(I.InvoiceDate) as "Year", MONTH(I.InvoiceDate) as "Month", CASE WHEN SUM(ol.UnitPrice*ol.Quantity) >= 4600000 THEN SUM(ol.UnitPrice*ol.Quantity) ELSE 0 END as "TotalPrice" from Sales.Invoices I
-Inner join Sales.OrderLines OL ON ol.OrderID = I.OrderID
+Select YEAR(I.InvoiceDate) as "Year", MONTH(I.InvoiceDate) as "Month", SUM(ol.UnitPrice*ol.Quantity) as "TotalPrice" from Sales.Invoices I
+Inner join Sales.InvoiceLines OL ON ol.InvoiceID = I.InvoiceID
 group by YEAR(I.InvoiceDate), MONTH(I.InvoiceDate)
+having SUM(ol.UnitPrice*ol.Quantity) >= 4600000
 Order by Year, Month ASC 
 /*
 3. ¬ывести сумму продаж, дату первой продажи
@@ -45,7 +46,7 @@ Order by Year, Month ASC
 ѕродажи смотреть в таблице Sales.Invoices и св€занных таблицах.
 */
 Select YEAR(I.InvoiceDate) as "Year", MONTH(I.InvoiceDate) as "Month", OL.description, SUM(ol.UnitPrice*ol.Quantity) as "TotalPrice", Min(I.InvoiceDate) as "minDateSale", COUNT(OL.Quantity) as "count" from Sales.Invoices I
-Inner join Sales.OrderLines OL ON ol.OrderID = I.OrderID
+Inner join Sales.InvoiceLines OL ON ol.InvoiceID = I.InvoiceID
 group by YEAR(I.InvoiceDate), MONTH(I.InvoiceDate), OL.Description
 Having COUNT(OL.Quantity) < 50
 Order by Year, Month ASC 
