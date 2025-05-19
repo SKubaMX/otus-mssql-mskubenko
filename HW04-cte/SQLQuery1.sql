@@ -12,26 +12,49 @@ where p.IsSalesperson = 1 and p.personid not in (select i.salespersonpersonid fr
 2. ¬ыберите товары с минимальной ценой (подзапросом). —делайте два варианта подзапроса. 
 ¬ывести: »ƒ товара, наименование товара, цена.
 */
-
--- не совсем пон€тно задание, либо неполна€ формулировка
-select distinct top 10  il.StockItemID, il.Description, il.UnitPrice from [Sales].[InvoiceLines] IL
-order by il.UnitPrice asc
-
-
+select top 1 il.StockItemID, il.Description, il.UnitPrice from Sales.InvoiceLines il
+where il.UnitPrice = (select MIN(UnitPrice) from Sales.InvoiceLines)
 /*
 3. ¬ыберите информацию по клиентам, которые перевели компании п€ть максимальных платежей 
 из Sales.CustomerTransactions. 
 ѕредставьте несколько способов (в том числе с CTE). 
 */ 
-
-тоже не пон€тно которые перевели компании п€ть максимальных платежей 
-- 5 сотрудников которые перевели максимум платежей
-- или только тех сотрудиков, у которых платежи вход€т в топ 5? 
-
+;with TopPayments as (
+    select top 5 *
+    from Sales.CustomerTransactions
+    order by AmountExcludingTax desc
+)
+select c.CustomerID, c.CustomerName, tp.AmountExcludingTax
+from TopPayments tp
+inner join [Sales].[Customers] C on c.CustomerID = tp.CustomerID
 /*
 4. ¬ыберите города (ид и название), в которые были доставлены товары, 
 вход€щие в тройку самых дорогих товаров, а также им€ сотрудника, 
 который осуществл€л упаковку заказов (PackedByPersonID).
 */
-
-TODO: напишите здесь свое решение
+;with TopItems AS (
+    select TOP 3 StockItemID
+    from Warehouse.StockItems
+    order by UnitPrice desc
+),
+DeliveriesWithTopItems AS (
+    select 
+        i.CustomerID,
+        i.PackedByPersonID
+    from Sales.Invoices i
+    join Sales.InvoiceLines il ON i.InvoiceID = il.InvoiceID
+    where il.StockItemID IN (select StockItemID from TopItems)
+),
+Result AS (
+    select 
+        cu.DeliveryCityID,
+        c.CityName,
+        d.PackedByPersonID,
+        p.FullName AS PackedByEmployee
+    from DeliveriesWithTopItems d
+    join Sales.Customers cu ON d.CustomerID = cu.CustomerID
+    join Application.Cities c ON cu.DeliveryCityID = c.CityID
+    join Application.People p ON d.PackedByPersonID = p.PersonID
+)
+select distinct DeliveryCityID, CityName, PackedByEmployee
+from Result;
