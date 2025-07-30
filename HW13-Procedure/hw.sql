@@ -19,32 +19,29 @@ USE WideWorldImporters
 /*
 1) Написать функцию возвращающую Клиента с наибольшей суммой покупки.
 */
-
-CREATE FUNCTION CustomersMaxPay ()
+CREATE FUNCTION CustomersMaxPayment()
 RETURNS nvarchar (100)
 AS 
-begin
-DECLARE @CustomersMaxPay nvarchar (100);
-WITH A AS
-( 
-	SELECT CustomerName, sum(UnitPrice*Quantity) AS 'Сумма покупки'
-	FROM Sales.InvoiceLines AS SIL
-	JOIN Sales.Invoices AS SI ON SIL.InvoiceID=SI.InvoiceID
-	JOIN Sales.Customers AS SC ON SI.CustomerID=SC.CustomerID
-	GROUP BY  CustomerName
-)
+BEGIN
+    DECLARE @CustomersMaxPay nvarchar(100);
+    
+    SELECT TOP 1 
+        @CustomersMaxPay = CustomerName
+    FROM (
+        SELECT 
+            SC.CustomerName,
+            SUM(SIL.UnitPrice * SIL.Quantity) AS TotalAmount
+        FROM Sales.InvoiceLines SIL
+        JOIN Sales.Invoices SI ON SIL.InvoiceID = SI.InvoiceID
+        JOIN Sales.Customers SC ON SI.CustomerID = SC.CustomerID
+        GROUP BY SC.CustomerName
+    ) AS SubQuery
+    ORDER BY TotalAmount DESC;
 
-SELECT @CustomersMaxPay = CustomerName
-FROM A
-WHERE 'Сумма покупки' = (SELECT MAX('Сумма покупки') FROM A)
-GROUP BY CustomerName
-RETURN @CustomersMaxPay
+    RETURN @CustomersMaxPay;
 END
 GO
-
---Проверка работы функции
-SELECT dbo.CustomersMaxPay()
-GO
+SELECT dbo.CustomersMaxPayment() AS MaxPayingCustomer;
 
 /*
 2) Написать хранимую процедуру с входящим параметром СustomerID, выводящую сумму покупки по этому клиенту.
@@ -112,28 +109,31 @@ exec MinUnitPrice1
 4) Создайте табличную функцию покажите как ее можно вызвать для каждой строки result set'а без использования цикла. 
 */
 
-CREATE PROCEDURE LastOrders
+CREATE FUNCTION LastOrdersFunction()
+RETURNS TABLE
 AS
-BEGIN 
-	SELECT C.CustomerName, O.*
-	FROM Sales.Customers C
-	CROSS APPLY (SELECT TOP 2 CustomerID
-                FROM Sales.Orders O
-                WHERE O.CustomerID = C.CustomerID
-					AND OrderDate < '2014-01-01'
-                ORDER BY O.OrderDate DESC, O.OrderID DESC) AS O
-	ORDER BY C.CustomerName;
-END
-
-
-EXEC LastOrders
-
-WITH RESULT SETS(
-  (  
-	CustomerName nvarchar (100),
-	[CustomerID] int
-  )
-)
+RETURN
+(
+    SELECT 
+        C.CustomerName,
+        O.CustomerID
+    FROM Sales.Customers C
+    CROSS APPLY (
+        SELECT TOP 2 
+            CustomerID
+        FROM Sales.Orders 
+        WHERE 
+            CustomerID = C.CustomerID
+            AND OrderDate < '2014-01-01'
+        ORDER BY 
+            OrderDate DESC, 
+            OrderID DESC
+    ) AS O
+);
+GO
+SELECT * 
+FROM LastOrdersFunction()
+ORDER BY CustomerName;
 /*
 5) Опционально. Во всех процедурах укажите какой уровень изоляции транзакций вы бы использовали и почему. 
 */
